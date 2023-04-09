@@ -92,7 +92,7 @@ def get__content(message):
                         if retry_count != 1:
                             time.sleep(0.5)
                         bot.send_media_group(message.chat.id, [InputMediaVideo(video, None, None)],
-                            None, message.id, 20)
+                            None, message.id)
                         break
                     except Exception as e:
                         bot.send_message(dev_chat_id,
