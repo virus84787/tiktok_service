@@ -79,11 +79,9 @@ def get__content(message):
                         retry_count += 1
 
             response_data = url_response.read().decode('utf-8')
-
             soup = BeautifulSoup(response_data, 'html.parser')
-            video_link = soup.find(
-                "a", "pure-button pure-button-primary is-center u-bl dl-button download_link without_watermark vignette_active")['href']
-            urllib.request.urlretrieve(video_link, str(id) + ".mp4")
+            video_link = soup.select('a[class*="pure-button pure-button-primary is-center u-bl dl-button download_link without_watermark vignette_active"]')
+            urllib.request.urlretrieve(video_link[0]['href'], str(id) + ".mp4")
                     
             retry_count = 1
             while (retry_count <= 10):
