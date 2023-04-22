@@ -112,7 +112,7 @@ def get__content(message):
             file.write(get_current_time() + " id: " + str(id) + '\n' + str(message.chat.id) + '\n' + url + '\n' + str(
                 e) + '\n' + '\n')
             file.close()
-            bot.reply_to(message, "something went wrong")
+            # bot.reply_to(message, "something went wrong")
             print(get_current_time() + " id: " + str(id) +
                 ' something went wrong' + '\n' + str(e))
 
