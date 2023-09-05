@@ -14,6 +14,8 @@ bot = telebot.TeleBot(config.TOKEN)
 dev_chat_id = config.DEV_CHAT_ID
 download_tool_site = config.DOWNLOAD_TOOL_SITE
 download_tool_site_tt = config.DOWNLOAD_TOOL_SITE_TT
+download_slide_tool_site = config.DOWNLOAD_SLIDE_TOOL_SITE
+download_slide_video_tool_site = config.DOWNLOAD_SLIDE_VIDEO_TOOL_SITE
 
 def iri_to_uri(iri):
     parts = urlsplit(iri)
@@ -81,7 +83,31 @@ def get__content(message):
             response_data = url_response.read().decode('utf-8')
             soup = BeautifulSoup(response_data, 'html.parser')
             video_link = soup.select('a[class*="pure-button pure-button-primary is-center u-bl dl-button download_link without_watermark vignette_active"]')
-            urllib.request.urlretrieve(video_link[0]['href'], str(id) + ".mp4")
+            if video_link:
+                print(video_link[0]['href'])
+                urllib.request.urlretrieve(video_link[0]['href'], str(id) + ".mp4")
+            else:
+                slides_data_element = soup.select('input[name="slides_data"]')
+                slides_data_value = slides_data_element[0]['value']
+                data = urllib.parse.urlencode(
+                    {'slides_data': slides_data_value})
+                data = data.encode('ascii')
+                req = urllib.request.Request(
+                    download_slide_tool_site,
+                    data=data,
+                    headers={
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
+                    }
+                )
+                slider_url_responce = urllib.request.urlopen(req)
+                hx_redirect = slider_url_responce.getheader('Hx-Redirect')
+                x_orign = slider_url_responce.getheader('X-Origin')
+                slider_video_id = hx_redirect[hx_redirect.rfind('/') + 1 :]
+                slider_video_link = 'https://' + x_orign + download_slide_video_tool_site + str(slider_video_id)
+                print(get_current_time() + " id: " + str(id) + ' Slider video link: ' + slider_video_link)
+                urllib.request.urlretrieve(slider_video_link, str(id) + ".mp4")
+
+
                     
             retry_count = 1
             while (retry_count <= 10):
@@ -106,13 +132,14 @@ def get__content(message):
                 str(id) + ' Success')
 
         except Exception as e:
+
             bot.send_message(dev_chat_id, "Chat identity: " +
                             chat_identity + '\n' + 'Error: ' + str(e))
             file = open("logs_errors.txt", "a")
             file.write(get_current_time() + " id: " + str(id) + '\n' + str(message.chat.id) + '\n' + url + '\n' + str(
                 e) + '\n' + '\n')
             file.close()
-            # bot.reply_to(message, "something went wrong")
+            bot.reply_to(message, "something went wrong")
             print(get_current_time() + " id: " + str(id) +
                 ' something went wrong' + '\n' + str(e))
 
