@@ -134,7 +134,7 @@ def get__content(message):
         except Exception as e:
 
             bot.send_message(dev_chat_id, "Chat identity: " +
-                            chat_identity + '\n' + 'Error: ' + str(e))
+                            chat_identity + '\n' + 'Error: ' + str(e )+ '\n' + " URL: " + url )
             file = open("logs_errors.txt", "a")
             file.write(get_current_time() + " id: " + str(id) + '\n' + str(message.chat.id) + '\n' + url + '\n' + str(
                 e) + '\n' + '\n')
