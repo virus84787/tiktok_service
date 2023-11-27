@@ -50,6 +50,26 @@ def get_chat_identity(message):
 
     return chat_identity
 
+def get_post_description(url):
+    post_description = ''
+    try:
+        req = urllib.request.Request(
+            url,
+            data=None,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36"
+            },
+        )
+        url_response = urllib.request.urlopen(req)
+        response_data = url_response.read().decode("utf-8")
+        soup = BeautifulSoup(response_data, "html.parser")
+        author = soup.find("span", {"data-e2e": "browse-username"}).text
+        capations = soup.find("meta", {"property":"og:description"})["content"]
+        post_description = "@" + author + "\n" + capations
+    except Exception as e:
+        print("Post description has no find")
+    return post_description
+
 
 @bot.message_handler(content_types=["text"])
 def get__content(message):
@@ -75,11 +95,13 @@ def get__content(message):
             + " id: "
             + str(id)
             + " Chat identity: "
+            + "\n"
             + chat_identity
         )
         url_message = message.text
         start_url = url_message.find("https")
         url = iri_to_uri(url_message[start_url:])
+        post_description = get_post_description(url)
         print(get_current_time() + " id: " + str(id) + " URL: " + url)
 
         data = urllib.parse.urlencode(
@@ -158,7 +180,7 @@ def get__content(message):
                         time.sleep(0.5)
                     bot.send_media_group(
                         message.chat.id,
-                        [InputMediaVideo(video, None, None)],
+                        [InputMediaVideo(video, None, post_description)],
                         None,
                         message.id,
                     )
