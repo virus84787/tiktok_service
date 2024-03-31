@@ -157,12 +157,15 @@ def get__content(message):
                 hx_redirect = slider_url_responce.getheader("Hx-Redirect")
                 x_orign = slider_url_responce.getheader("X-Origin")
                 slider_video_id = hx_redirect[hx_redirect.rfind("/") + 1 :]
-                slider_video_link = (
-                    "https://"
-                    + x_orign
-                    + download_slide_video_tool_site
-                    + str(slider_video_id)
-                )
+                if 'gor.ssstik.io' not in hx_redirect:
+                    slider_video_link = hx_redirect
+                else:
+                    slider_video_link = (
+                        "https://"
+                        + x_orign
+                        + download_slide_video_tool_site
+                        + str(slider_video_id)
+                    )
                 print(
                     get_current_time()
                     + " id: "
@@ -238,6 +241,22 @@ def get__content(message):
                 + " something went wrong"
                 + "\n"
                 + str(e)
+            )
+            try:
+                if video:
+                    video.close()
+                    os.remove(str(id) + ".mp4")
+            except Exception as e:
+                bot.send_message(
+                dev_chat_id,
+                "Chat identity: "
+                + chat_identity
+                + "\n"
+                + "Error: "
+                + str(e)
+                + "\n"
+                + "URL: "
+                + url,
             )
 
 
