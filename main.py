@@ -16,6 +16,7 @@ download_tool_site = config.DOWNLOAD_TOOL_SITE
 download_tool_site_tt = config.DOWNLOAD_TOOL_SITE_TT
 download_slide_tool_site = config.DOWNLOAD_SLIDE_TOOL_SITE
 download_slide_video_tool_site = config.DOWNLOAD_SLIDE_VIDEO_TOOL_SITE
+download_tool_site_2 = config.DOWNLOAD_TOOL_SITE_2
 
 
 def iri_to_uri(iri):
@@ -31,11 +32,9 @@ def iri_to_uri(iri):
     )
     return uri
 
-
 def get_current_time():
     now = datetime.now()
     return now.strftime("%d/%m/%Y %H:%M:%S")
-
 
 def get_chat_identity(message):
     chat_identity = "Chat ID: " + str(message.chat.id) + "\n"
@@ -57,7 +56,7 @@ def get_post_description(url):
             url,
             data=None,
             headers={
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
             },
         )
         url_response = urllib.request.urlopen(req)
@@ -105,43 +104,43 @@ def get__content(message):
         print(get_current_time() + " id: " + str(id) + " URL: " + url)
 
         data = urllib.parse.urlencode(
-            {"id": url, "locale": "en", "tt": download_tool_site_tt}
+            {"q": url}
         )
         data = data.encode("ascii")
         req = urllib.request.Request(
-            download_tool_site,
+            download_tool_site_2,
             data=data,
             headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
             },
         )
         try:
-            retry_count = 1
-            while retry_count <= 10:
-                try:
-                    time.sleep(0.1)
-                    url_response = urllib.request.urlopen(req)
-                    break
-                except Exception as e:
-                    bot.send_message(
-                        dev_chat_id,
-                        "Chat identity: "
-                        + chat_identity
-                        + "\n"
-                        + "Retry - "
-                        + str(retry_count),
-                    )
-                    retry_count += 1
-
+            url_response = urllib.request.urlopen(req)
             response_data = url_response.read().decode("utf-8")
             soup = BeautifulSoup(response_data, "html.parser")
-            video_link = soup.select(
-                'a[class*="pure-button pure-button-primary is-center u-bl dl-button download_link without_watermark vignette_active"]'
-            )
-            if video_link:
-                print(video_link[0]["href"])
-                urllib.request.urlretrieve(video_link[0]["href"], str(id) + ".mp4")
+            video_link_raw = soup.find_all('a')
+            video_link = video_link_raw[0]["href"].replace('"', '').replace("\\", "")
+            print('Video link: ' + video_link)
+            if video_link != '#':
+                opener = urllib.request.build_opener()
+                opener.addheaders = [('User-Agent', 'MyApp/1.0')]
+                urllib.request.install_opener(opener)
+                urllib.request.urlretrieve(video_link, str(id) + ".mp4")
             else:
+                data = urllib.parse.urlencode(
+                    {"id": url, "locale": "en", "tt": download_tool_site_tt}
+                )
+                data = data.encode("ascii")
+                req = urllib.request.Request(
+                    download_tool_site,
+                    data=data,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                    },
+                )
+                url_response = urllib.request.urlopen(req)
+                response_data = url_response.read().decode("utf-8")
+                soup = BeautifulSoup(response_data, "html.parser")
                 slides_data_element = soup.select('input[name="slides_data"]')
                 slides_data_value = slides_data_element[0]["value"]
                 data = urllib.parse.urlencode({"slides_data": slides_data_value})
@@ -177,6 +176,7 @@ def get__content(message):
 
             retry_count = 1
             while retry_count <= 10:
+                video = None
                 try:
                     video = open(str(id) + ".mp4", "rb")
                     if retry_count != 1:
@@ -207,6 +207,9 @@ def get__content(message):
             print(get_current_time() + " id: " + str(id) + " Success")
 
         except Exception as e:
+            if e.args[0] == 'A request to the Telegram API was unsuccessful. Error code: 413. Description: Request Entity Too Large':
+                bot.reply_to(message, "Content Entity Too Large!")
+            print(e.args[0])
             bot.send_message(
                 dev_chat_id,
                 "Chat identity: "
