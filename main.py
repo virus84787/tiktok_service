@@ -179,8 +179,8 @@ def get__content(message):
                 video = None
                 try:
                     video = open(str(id) + ".mp4", "rb")
-                    if retry_count != 1:
-                        time.sleep(0.5)
+                    # if retry_count != 1:
+                    #     time.sleep(0.5)
                     bot.send_media_group(
                         message.chat.id,
                         [InputMediaVideo(video, None, post_description)],
@@ -209,6 +209,8 @@ def get__content(message):
         except Exception as e:
             if e.args[0] == 'A request to the Telegram API was unsuccessful. Error code: 413. Description: Request Entity Too Large':
                 bot.reply_to(message, "Content Entity Too Large!")
+            else:
+                bot.reply_to(message, "something went wrong")
             print(e.args[0])
             bot.send_message(
                 dev_chat_id,
@@ -236,7 +238,6 @@ def get__content(message):
                 + "\n"
             )
             file.close()
-            bot.reply_to(message, "something went wrong")
             print(
                 get_current_time()
                 + " id: "
