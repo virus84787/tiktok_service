@@ -6,6 +6,7 @@ from telebot.types import InputMediaVideo
 import config
 import time
 import urllib.request
+import urllib.error
 from datetime import datetime
 from urllib.parse import quote, urlsplit, urlunsplit
 from bs4 import BeautifulSoup
@@ -32,9 +33,11 @@ def iri_to_uri(iri):
     )
     return uri
 
+
 def get_current_time():
     now = datetime.now()
     return now.strftime("%d/%m/%Y %H:%M:%S")
+
 
 def get_chat_identity(message):
     chat_identity = "Chat ID: " + str(message.chat.id) + "\n"
@@ -48,6 +51,7 @@ def get_chat_identity(message):
         )
 
     return chat_identity
+
 
 def get_post_description(url):
     post_description = ''
@@ -63,7 +67,8 @@ def get_post_description(url):
         response_data = url_response.read().decode("utf-8")
         soup = BeautifulSoup(response_data, "html.parser")
         author = soup.find("span", {"data-e2e": "browse-username"}).text
-        capations = soup.find("meta", {"property":"og:description"})["content"]
+        capations = soup.find("meta", {"property": "og:description"})[
+            "content"]
         post_description = "@" + author + "\n" + capations
     except Exception as e:
         print("Post description has no find")
@@ -75,7 +80,8 @@ def get__content(message):
     if "tiktok.com/" in message.text:
         chat_identity = get_chat_identity(message)
 
-        processing_message = bot.reply_to(message, "Please, wait...\nDownloading...")
+        processing_message = bot.reply_to(
+            message, "Please, wait...\nDownloading...")
 
         try:
             file = open("id.txt", "r")
@@ -121,7 +127,8 @@ def get__content(message):
             response_data = url_response.read().decode("utf-8")
             soup = BeautifulSoup(response_data, "html.parser")
             video_link_raw = soup.find_all('a')
-            video_link = video_link_raw[0]["href"].replace('"', '').replace("\\", "")
+            video_link = video_link_raw[0]["href"].replace(
+                '"', '').replace("\\", "")
             print('Video link: ' + video_link)
             if video_link != '#':
                 opener = urllib.request.build_opener()
@@ -145,7 +152,8 @@ def get__content(message):
                 soup = BeautifulSoup(response_data, "html.parser")
                 slides_data_element = soup.select('input[name="slides_data"]')
                 slides_data_value = slides_data_element[0]["value"]
-                data = urllib.parse.urlencode({"slides_data": slides_data_value})
+                data = urllib.parse.urlencode(
+                    {"slides_data": slides_data_value})
                 data = data.encode("ascii")
                 req = urllib.request.Request(
                     download_slide_tool_site,
@@ -157,7 +165,7 @@ def get__content(message):
                 slider_url_responce = urllib.request.urlopen(req)
                 hx_redirect = slider_url_responce.getheader("Hx-Redirect")
                 x_orign = slider_url_responce.getheader("X-Origin")
-                slider_video_id = hx_redirect[hx_redirect.rfind("/") + 1 :]
+                slider_video_id = hx_redirect[hx_redirect.rfind("/") + 1:]
                 if 'gor.ssstik.io' not in hx_redirect:
                     slider_video_link = hx_redirect
                 else:
@@ -214,11 +222,22 @@ def get__content(message):
 
             bot.delete_message(message.chat.id, processing_message.id)
 
-            if e.args[0] == 'A request to the Telegram API was unsuccessful. Error code: 413. Description: Request Entity Too Large':
+            # Check if this is a Telegram API 413 error
+            if hasattr(e, 'args') and len(e.args) > 0 and str(e.args[0]) == 'A request to the Telegram API was unsuccessful. Error code: 413. Description: Request Entity Too Large':
                 bot.reply_to(message, "Content Entity Too Large!")
+            # Check if this is an HTTP 429 (Rate Limit) error
+            elif isinstance(e, urllib.error.HTTPError) and e.code == 429:
+                bot.reply_to(
+                    message, "Too many requests. Please wait a moment and try again.")
+                print("HTTP 429: Too Many Requests - Rate limit exceeded")
             else:
                 bot.reply_to(message, "something went wrong")
-            print(e.args[0])
+
+            if hasattr(e, 'args') and len(e.args) > 0:
+                print(e.args[0])
+            else:
+                print(str(e))
+
             bot.send_message(
                 dev_chat_id,
                 "Chat identity: "
@@ -259,16 +278,16 @@ def get__content(message):
                     os.remove(str(id) + ".mp4")
             except Exception as e:
                 bot.send_message(
-                dev_chat_id,
-                "Chat identity: "
-                + chat_identity
-                + "\n"
-                + "Error: "
-                + str(e)
-                + "\n"
-                + "URL: "
-                + url,
-            )
+                    dev_chat_id,
+                    "Chat identity: "
+                    + chat_identity
+                    + "\n"
+                    + "Error: "
+                    + str(e)
+                    + "\n"
+                    + "URL: "
+                    + url,
+                )
 
 
 bot.polling(none_stop=True)
